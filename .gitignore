@@ -1,0 +1,8 @@
+.DS_Store
+node_modules/
+input/*.csv
+output/*.txt
+output/*.json
+.env
+.env.*
+!.env.example
