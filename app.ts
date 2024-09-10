@@ -60,8 +60,13 @@ fs.writeFileSync("output/processedData.json", JSON.stringify(processedData, null
 const pickedData = processedData
 .filter(o => 
     [
-        "#38704-3216014",
-        "#38704-3267295",
+        "#38704-3216014", // credit, tax, withholding
+        "#38704-3215164", // bank, tax, withholding
+        "#38704-3215100", // credit, tax
+        "#38704-3267295", // bank, tax
+        "#38704-3225968", // credit
+        "#38704-3215101", // bank
+
     ].includes(o.eventpopId)
 )
 
@@ -71,11 +76,12 @@ const pickedData = processedData
         try {
             // 2. create invoice
             const invoice = await createInvoice(item, index)
+            console.log(item.eventpopId, invoice.data.documentSerial)
 
             // 3. create payment record
             //   3.1. bank transfer
             //   3.2. credit card
-            // const paymentConfirmation = await pay(item, invoice.data.recordId)
+            const paymentConfirmation = await pay(item, invoice.data.recordId)
         } catch (e) {
             console.error(e)
         } finally {

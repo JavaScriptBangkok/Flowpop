@@ -6,6 +6,7 @@ import { headers } from './constants';
 interface PartialResponse {
     data: {
         recordId: number
+        documentSerial: string
     }
 }
 
