@@ -59,14 +59,14 @@ const processedData: ProcessedData[] = (orders as Order[])
             },
             payment: {
                 method: item["Payment Method"] === "Bank transfer" ? 'bank' : 'credit',
-                when: DateTime.fromFormat(
+                when: new Date(DateTime.fromFormat(
                     item["Paid At"],
                     "dd/MM/yyyy - HH:mm",
                     {
                         zone: 'Asia/Bangkok',
                         setZone: true,
                     }
-                ).toISO()!
+                ).toISO()!).toISOString()
             },
             isWitholdingTax: Number(item["Withholding Tax"]) > 0
         } satisfies ProcessedData
@@ -89,6 +89,8 @@ const pickedData = processedData
 
     ].includes(o.eventpopId)
 )
+
+console.log(pickedData)
 
 ;(async () => {
     let index = 1

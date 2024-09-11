@@ -17,8 +17,8 @@ export const createPayment = (data: ProcessedData, recordId: number) => {
     const actualPriceAfterDeductWithheld = totalPrice - withheldAmount
 
     let payload = {
-        "dateNow": data.payment.method === 'bank' ? data.payment.when : creditCardBilledDate,
-        "chequeDate": data.payment.method === 'bank' ? data.payment.when : creditCardBilledDate,
+        "dateNow": data.payment.method === 'bank' ? dayjs(data.payment.when).add(7, 'h').toISOString() : creditCardBilledDate,
+        "chequeDate": data.payment.method === 'bank' ? dayjs(data.payment.when).add(7, 'h').toISOString() : creditCardBilledDate,
         "withholdingTax": data.isWitholdingTax ? 3 : null,
         "amountWithheld": withheldAmount,
         "charge": 0,

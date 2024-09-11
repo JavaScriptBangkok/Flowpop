@@ -26,9 +26,13 @@ export const createInvoice = async (data: ProcessedData, index: number): Promise
         }
     }
 
-    const total = Number((data.ticket.amount * data.ticket.price).toFixed(2)); 
-    const vat = Number((total * 0.07).toFixed(2));
-    const grandTotal = Number((total + vat).toFixed(2));
+    const total = Number((data.ticket.amount * data.ticket.price).toFixed(2));
+
+    const preVat = Number((total * 100 / 107).toFixed(2));
+    const vat = Number((total - preVat).toFixed(2));
+
+    // const vat = Number((total * 0.07).toFixed(2));
+    // const grandTotal = Number((total + vat).toFixed(2));
 
     const raw = JSON.stringify({
         "isComplieAccountingRule": false,
@@ -50,8 +54,8 @@ export const createInvoice = async (data: ProcessedData, index: number): Promise
         "isReverseAccrual": false,
         "contactStateChange": false,
         "companyStateChange": false,
-        "publishedOn": data.payment.method === 'bank' ? data.payment.when : creditCardBilledDate,
-        "dueDate": data.payment.method === 'bank' ? data.payment.when : creditCardBilledDate,
+        "publishedOn": data.payment.method === 'bank' ? dayjs(data.payment.when).add(7, 'h').toISOString() : creditCardBilledDate,
+        "dueDate": data.payment.method === 'bank' ? dayjs(data.payment.when).add(7, 'h').toISOString() : creditCardBilledDate,
         "discount": 0,
         "discountPercentage": 0,
         "creditDays": 0,
@@ -150,11 +154,11 @@ export const createInvoice = async (data: ProcessedData, index: number): Promise
         "subTotal": total,
         "discountAmount": 0,
         "totalAfterDiscount": total,
-        "vatValue": Number((total * 0.07).toFixed(2)),
+        "vatValue": vat,
         "exemptAmount": 0,
-        "vatableAmount": Number((total * 0.93).toFixed(2)),
+        "vatableAmount": preVat,
         "grandTotal": total,
-        "totalExcludingVat": Number((total * 0.93).toFixed(2)),
+        "totalExcludingVat": preVat,
         "withholdingTaxAmount": 0,
         "paymentAmount": total,
         "grandTotalCurrency": null,
@@ -164,7 +168,7 @@ export const createInvoice = async (data: ProcessedData, index: number): Promise
         "contactTaxId": data.customer.taxId,
         "contactZipCode": "",
         "contactBranch": data.customer.branch,
-        "vatAmount": Number((total * 0.07).toFixed(2)),
+        "vatAmount": vat,
         "total": total,
         "reference": data.eventpopId,
         "internalNotes": data.customer.email,
