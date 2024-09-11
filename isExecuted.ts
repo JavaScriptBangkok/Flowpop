@@ -1,14 +1,13 @@
 import fs from 'fs'
 
-export const isExecuted = (eventpopOrderId: string) => {
+export const isExecuted = (type: string, eventpopOrderId: string) => {
     try {
-        const executedIds = fs
-            .readFileSync('output/success.txt', 'utf-8').trim()
+        return fs
+            .readFileSync(`output/${type}.txt`, 'utf-8').trim()
             .split('\n')
-            .map(line => line.split(' ')[0])
-
-        return executedIds.includes(eventpopOrderId)
+            .map(line => line.split(' '))
+            .find(line => line[0] === eventpopOrderId)
     } catch (e) {
-        return false
+        return undefined
     }
 }

@@ -6,10 +6,9 @@ import { DateTime } from "luxon";
 import { execSync } from 'child_process';
 
 import { createInvoice } from "./createInvoice";
-import { pay } from "./pay";
+import { createPayment } from "./createPayment";
 
 import type { Order, ProcessedData } from "./types";
-import {isExecuted} from "./isExecuted";
 import dayjs from "dayjs";
 import {creditCardCutOffDate} from "./config";
 import * as process from "node:process";
@@ -72,10 +71,6 @@ const processedData: ProcessedData[] = (orders as Order[])
             isWitholdingTax: Number(item["Withholding Tax"]) > 0
         } satisfies ProcessedData
     })
-   // filter out credit card order that beyond cutoff date
-    .filter(o => {
-        return o.payment.method === 'bank' || dayjs(o.payment.when).isBefore(dayjs(creditCardCutOffDate))
-    })
 
 fs.writeFileSync("output/processedData.json", JSON.stringify(processedData, null, 2))
 
@@ -89,7 +84,8 @@ const pickedData = processedData
         "#38704-3215100", // credit, tax
         "#38704-3267295", // bank, tax
         "#38704-3225968", // credit
-        "#38704-3215101", // bank
+        "#38704-3215101", // bank,
+        "#38704-3288940", // out of scope
 
     ].includes(o.eventpopId)
 )
@@ -98,22 +94,18 @@ const pickedData = processedData
     let index = 1
     for await (const item of pickedData) {
         try {
-            if (isExecuted(item.eventpopId)) {
-                console.log('skip: ', item.eventpopId)
-            } else {
-                // 2. create invoice
-                const invoice = await createInvoice(item, index)
+            // 2. create invoice
+            const invoice = await createInvoice(item, index)
 
-                // 3. create payment record
-                //   3.1. bank transfer
-                //   3.2. credit card
-                const paymentConfirmation = await pay(item, invoice.data.recordId)
+            // 3. create payment record
+            //   3.1. bank transfer
+            //   3.2. credit card
 
-                console.log('done: ', item.eventpopId, invoice.data.documentSerial)
-                execSync(`echo "${item.eventpopId} ${invoice.data.recordId} ${invoice.data.documentSerial}" >> output/success.txt`, {
-                    cwd: process.cwd()
-                })
-            }
+            // skip create payment if payment is credit and outside cut off date
+            if (item.payment.method === 'bank' || dayjs(item.payment.when).isBefore(dayjs(creditCardCutOffDate)))
+                await createPayment(item, invoice.recordId)
+            else
+                console.log('payment:igno: ', item.eventpopId)
         } catch (e) {
             console.error('fail: ', item.eventpopId)
             console.error(e)

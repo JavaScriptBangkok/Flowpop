@@ -2,14 +2,22 @@ import dayjs from "dayjs";
 import { headers } from "./constants";
 import { ProcessedData } from "./types";
 import {creditCardBilledDate} from "./config";
+import {isExecuted} from "./isExecuted";
+import {execSync} from "child_process";
+import process from "node:process";
 
-export const pay = (data: ProcessedData, recordId: number) => {
+export const createPayment = (data: ProcessedData, recordId: number) => {
+    if (isExecuted('payment', data.eventpopId)) {
+        console.log('payment:skip: ', data.eventpopId)
+        return
+    }
+
     const totalPrice = data.ticket.price * data.ticket.amount
     const withheldAmount = Number(((data.isWitholdingTax ? 0.0279 : 0) * totalPrice).toFixed(2))
     const actualPriceAfterDeductWithheld = totalPrice - withheldAmount
 
     let payload = {
-        "dateNow": dayjs().toISOString(),
+        "dateNow": data.payment.method === 'bank' ? data.payment.when : creditCardBilledDate,
         "chequeDate": data.payment.method === 'bank' ? data.payment.when : creditCardBilledDate,
         "withholdingTax": data.isWitholdingTax ? 3 : null,
         "amountWithheld": withheldAmount,
@@ -46,6 +54,10 @@ export const pay = (data: ProcessedData, recordId: number) => {
     body: JSON.stringify(payload),
     };
 
+    console.log('payment:done: ', data.eventpopId)
+    execSync(`echo "${data.eventpopId}" >> output/payment.txt`, {
+        cwd: process.cwd()
+    })
     return fetch("https://api-core-canary.flowaccount.com/api/th/tax-invoices/"+ recordId +"/payments", requestOptions)
         .then((response) => {
             console.log(response.status)

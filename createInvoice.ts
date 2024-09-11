@@ -3,15 +3,29 @@ import dayjs from 'dayjs'
 import { type ProcessedData } from "./types";
 import { headers } from './constants';
 import {creditCardBilledDate} from "./config";
+import {isExecuted} from "./isExecuted";
+import {execSync} from "child_process";
+import process from "node:process";
 
-interface PartialResponse {
-    data: {
-        recordId: number
-        documentSerial: string
-    }
+interface InvoiceResponse {
+    recordId: number
+    documentSerial: string
 }
 
-export const createInvoice = async (data: ProcessedData, index: number) => {
+interface PartialResponse {
+    data: InvoiceResponse
+}
+
+export const createInvoice = async (data: ProcessedData, index: number): Promise<InvoiceResponse> => {
+    const cachedRecord = isExecuted('invoice', data.eventpopId)
+    if (cachedRecord) {
+        console.log('invoice:skip: ', data.eventpopId)
+        return {
+            recordId: Number(cachedRecord[1]),
+            documentSerial: cachedRecord[2],
+        }
+    }
+
     const total = Number((data.ticket.amount * data.ticket.price).toFixed(2)); 
     const vat = Number((total * 0.07).toFixed(2));
     const grandTotal = Number((total + vat).toFixed(2));
@@ -162,7 +176,7 @@ export const createInvoice = async (data: ProcessedData, index: number) => {
         body: raw,
     };
 
-    return fetch("https://api-core-canary.flowaccount.com/api/th/tax-invoices", requestOptions)
+    const invoice = await fetch("https://api-core-canary.flowaccount.com/api/th/tax-invoices", requestOptions)
         .then((response) => {
             console.log(response.status)
             return response.json()
@@ -170,4 +184,13 @@ export const createInvoice = async (data: ProcessedData, index: number) => {
         .then((result) => {
             return result as PartialResponse
         })
+
+    console.log('invoice:done: ', data.eventpopId)
+    execSync(`echo "${data.eventpopId} ${invoice.data.recordId} ${invoice.data.documentSerial}" >> output/invoice.txt`, {
+        cwd: process.cwd()
+    })
+    return {
+        documentSerial: invoice.data.documentSerial,
+        recordId: invoice.data.recordId,
+    }
 }
