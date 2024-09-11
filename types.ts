@@ -54,6 +54,7 @@ export interface Order {
         taxId: string | null
         address: string | null
         branch: string
+        email: string
     }
     isWitholdingTax: boolean
 }

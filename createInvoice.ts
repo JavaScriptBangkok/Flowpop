@@ -2,6 +2,7 @@ import dayjs from 'dayjs'
 
 import { type ProcessedData } from "./types";
 import { headers } from './constants';
+import {creditCardBilledDate} from "./config";
 
 interface PartialResponse {
     data: {
@@ -35,8 +36,8 @@ export const createInvoice = async (data: ProcessedData, index: number) => {
         "isReverseAccrual": false,
         "contactStateChange": false,
         "companyStateChange": false,
-        "publishedOn": data.payment.when,
-        "dueDate": data.payment.when,
+        "publishedOn": data.payment.method === 'bank' ? data.payment.when : creditCardBilledDate,
+        "dueDate": data.payment.method === 'bank' ? data.payment.when : creditCardBilledDate,
         "discount": 0,
         "discountPercentage": 0,
         "creditDays": 0,
@@ -150,7 +151,9 @@ export const createInvoice = async (data: ProcessedData, index: number) => {
         "contactZipCode": "",
         "contactBranch": data.customer.branch,
         "vatAmount": Number((total * 0.07).toFixed(2)),
-        "total": total
+        "total": total,
+        "reference": data.eventpopId,
+        "internalNotes": data.customer.email,
     });
 
     const requestOptions = {

@@ -1,6 +1,7 @@
 import dayjs from "dayjs";
 import { headers } from "./constants";
 import { ProcessedData } from "./types";
+import {creditCardBilledDate} from "./config";
 
 export const pay = (data: ProcessedData, recordId: number) => {
     const totalPrice = data.ticket.price * data.ticket.amount
@@ -9,7 +10,7 @@ export const pay = (data: ProcessedData, recordId: number) => {
 
     let payload = {
         "dateNow": dayjs().toISOString(),
-        "chequeDate": data.payment.when,
+        "chequeDate": data.payment.method === 'bank' ? data.payment.when : creditCardBilledDate,
         "withholdingTax": data.isWitholdingTax ? 3 : null,
         "amountWithheld": withheldAmount,
         "charge": 0,
