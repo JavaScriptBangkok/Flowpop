@@ -34,6 +34,8 @@ export const createInvoice = async (data: ProcessedData, index: number): Promise
     // const vat = Number((total * 0.07).toFixed(2));
     // const grandTotal = Number((total + vat).toFixed(2));
 
+    console.log(data)
+
     const raw = JSON.stringify({
         "isComplieAccountingRule": false,
         "documentContactCompanyChangeType": 7,
@@ -54,8 +56,8 @@ export const createInvoice = async (data: ProcessedData, index: number): Promise
         "isReverseAccrual": false,
         "contactStateChange": false,
         "companyStateChange": false,
-        "publishedOn": data.payment.method === 'bank' ? dayjs(data.payment.when).add(7, 'h').toISOString() : creditCardBilledDate,
-        "dueDate": data.payment.method === 'bank' ? dayjs(data.payment.when).add(7, 'h').toISOString() : creditCardBilledDate,
+        "publishedOn": dayjs(data.payment.when).add(7, 'h').toISOString(),
+        "dueDate": dayjs(data.payment.when).add(7, 'h').toISOString(),
         "discount": 0,
         "discountPercentage": 0,
         "creditDays": 0,
@@ -188,6 +190,8 @@ export const createInvoice = async (data: ProcessedData, index: number): Promise
         .then((result) => {
             return result as PartialResponse
         })
+
+    console.log(invoice)
 
     console.log('invoice:done: ', data.eventpopId)
     execSync(`echo "${data.eventpopId} ${invoice.data.recordId} ${invoice.data.documentSerial}" >> output/invoice.txt`, {

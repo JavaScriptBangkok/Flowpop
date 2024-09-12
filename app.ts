@@ -4,7 +4,7 @@ import { parse } from "csv-parse/sync";
 import fs from "fs";
 import { DateTime } from "luxon";
 import { execSync } from 'child_process';
-import { isEmpty } from 'lodash'
+import isEmpty from 'lodash/isEmpty'
 
 import { createInvoice } from "./createInvoice";
 import { createPayment } from "./createPayment";
@@ -40,17 +40,19 @@ const orderWithEmail: Record<string, string> = parse(fs.readFileSync("input/even
 const processedData: ProcessedData[] = (orders as Order[])
     // filter subtotal 0 away
     .filter(o => Number(o['Subtotal']) > 0)
+    .filter(o => o["Order #"] === '#38704-3215128')
     // beautify data
     .map(item => {
         const taxInfo = ordersWithTaxMap[item["Order #"]]
+        console.log(taxInfo)
 
         return {
             eventpopId: item['Order #'],
             customer: {
-                name: taxInfo?.["Billing Name"] ?? item["Buyer Name"],
+                name: !isEmpty(taxInfo?.["Billing Name"]) ? taxInfo?.["Billing Name"] : item["Buyer Name"],
                 taxId: taxInfo?.["Billing Tax ID"] ?? null,
                 address: taxInfo?.["Billing Address"] ?? null,
-                branch: taxInfo?.["Billing Branch"] ?? 'สำนักงานใหญ่',
+                branch: taxInfo?.["Billing Branch"] ?? '',
                 email: orderWithEmail[item['Order #']]
             },
             ticket: {
@@ -78,20 +80,20 @@ fs.writeFileSync("output/processedData.json", JSON.stringify(processedData, null
 // const pickedData = [processedData[0]]
 // const pickedData = processedData
 const pickedData = processedData
-.filter(o => 
-    [
-        "#38704-3216014", // credit, tax, withholding
-        "#38704-3215164", // bank, tax, withholding
-        "#38704-3215100", // credit, tax
-        "#38704-3267295", // bank, tax
-        "#38704-3225968", // credit
-        "#38704-3215101", // bank,
-        "#38704-3288940", // out of scope,
-        "#38704-3251019", // company
-        "#38704-3215560"   // company
-
-    ].includes(o.eventpopId)
-)
+// .filter(o =>
+//     [
+//         "#38704-3216014", // credit, tax, withholding
+//         "#38704-3215164", // bank, tax, withholding
+//         "#38704-3215100", // credit, tax
+//         "#38704-3267295", // bank, tax
+//         "#38704-3225968", // credit
+//         "#38704-3215101", // bank,
+//         "#38704-3288940", // out of scope,
+//         "#38704-3251019", // company
+//         "#38704-3215560"   // company
+//
+//     ].includes(o.eventpopId)
+// )
 
 ;(async () => {
     let index = 1
