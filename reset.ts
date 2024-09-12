@@ -25,16 +25,25 @@ const invoices = fs.readFileSync("output/invoice.txt", "utf8").trim().split("\n"
         await fetch(`https://api-core-canary.flowaccount.com/api/th/tax-invoices/${invoice.recordId}/status-key/void`, {
             method: 'POST',
             headers
+        }).then(o => {
+            console.log(o.status)
+            return o
         })
         // reset it
         await fetch(`https://api-core-canary.flowaccount.com/api/th/tax-invoices/${invoice.recordId}/status-key/awaiting`, {
             method: 'POST',
             headers
+        }).then(o => {
+            console.log(o.status)
+            return o
         })
         // delete it
         await fetch(`https://api-core-canary.flowaccount.com/api/th/tax-invoices/${invoice.recordId}`, {
             method: 'DELETE',
             headers
+        }).then(o => {
+            console.log(o.status)
+            return o
         })
     }
 })()

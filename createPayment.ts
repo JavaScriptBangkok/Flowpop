@@ -5,10 +5,11 @@ import {creditCardBilledDate} from "./config";
 import {isExecuted} from "./isExecuted";
 import {execSync} from "child_process";
 import process from "node:process";
+import {logger} from "./logger";
 
 export const createPayment = (data: ProcessedData, recordId: number) => {
     if (isExecuted('payment', data.eventpopId)) {
-        console.log('payment:skip: ', data.eventpopId)
+        logger('payment', 'skip', data.eventpopId)
         return
     }
 
@@ -54,7 +55,7 @@ export const createPayment = (data: ProcessedData, recordId: number) => {
     body: JSON.stringify(payload),
     };
 
-    console.log('payment:done: ', data.eventpopId)
+    logger('payment', 'done', data.eventpopId)
     execSync(`echo "${data.eventpopId}" >> output/payment.txt`, {
         cwd: process.cwd()
     })

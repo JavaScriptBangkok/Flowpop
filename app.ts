@@ -13,6 +13,7 @@ import type { Order, ProcessedData } from "./types";
 import dayjs from "dayjs";
 import {creditCardCutOffDate} from "./config";
 import * as process from "node:process";
+import {logger} from "./logger";
 
 /**
  * Execute
@@ -40,11 +41,9 @@ const orderWithEmail: Record<string, string> = parse(fs.readFileSync("input/even
 const processedData: ProcessedData[] = (orders as Order[])
     // filter subtotal 0 away
     .filter(o => Number(o['Subtotal']) > 0)
-    .filter(o => o["Order #"] === '#38704-3215128')
     // beautify data
     .map(item => {
         const taxInfo = ordersWithTaxMap[item["Order #"]]
-        console.log(taxInfo)
 
         return {
             eventpopId: item['Order #'],
@@ -58,7 +57,7 @@ const processedData: ProcessedData[] = (orders as Order[])
             ticket: {
                 type: item["Ticket Type"],
                 amount: Number(item["Amount"]),
-                price: Number(item["Subtotal"])
+                price: Number(item["Unit Price"])
             },
             payment: {
                 method: item["Payment Method"] === "Bank transfer" ? 'bank' : 'credit',
@@ -77,23 +76,23 @@ const processedData: ProcessedData[] = (orders as Order[])
 
 fs.writeFileSync("output/processedData.json", JSON.stringify(processedData, null, 2))
 
-// const pickedData = [processedData[0]]
-// const pickedData = processedData
 const pickedData = processedData
-// .filter(o =>
-//     [
-//         "#38704-3216014", // credit, tax, withholding
-//         "#38704-3215164", // bank, tax, withholding
-//         "#38704-3215100", // credit, tax
-//         "#38704-3267295", // bank, tax
-//         "#38704-3225968", // credit
-//         "#38704-3215101", // bank,
-//         "#38704-3288940", // out of scope,
-//         "#38704-3251019", // company
-//         "#38704-3215560"   // company
-//
-//     ].includes(o.eventpopId)
-// )
+    // .filter(o =>
+    //     [
+    //         // "#38704-3216014", // credit, tax, withholding
+    //         // "#38704-3215164", // bank, tax, withholding
+    //         // "#38704-3215100", // credit, tax
+    //         // "#38704-3267295", // bank, tax
+    //         // "#38704-3225968", // credit
+    //         // "#38704-3215101", // bank,
+    //         // "#38704-3288940", // out of scope,
+    //         // "#38704-3251019", // company
+    //         // "#38704-3215560"   // company
+    //         "#38704-3244162"
+    //
+    //     ].includes(o.eventpopId)
+    // )
+
 
 ;(async () => {
     let index = 1
@@ -110,7 +109,7 @@ const pickedData = processedData
             if (item.payment.method === 'bank' || dayjs(item.payment.when).isBefore(dayjs(creditCardCutOffDate)))
                 await createPayment(item, invoice.recordId)
             else
-                console.log('payment:igno: ', item.eventpopId)
+                logger('payment', 'igno', item.eventpopId)
         } catch (e) {
             console.error('fail: ', item.eventpopId)
             console.error(e)

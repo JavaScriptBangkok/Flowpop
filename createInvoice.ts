@@ -2,10 +2,10 @@ import dayjs from 'dayjs'
 
 import { type ProcessedData } from "./types";
 import { headers } from './constants';
-import {creditCardBilledDate} from "./config";
 import {isExecuted} from "./isExecuted";
 import {execSync} from "child_process";
 import process from "node:process";
+import {logger} from "./logger";
 
 interface InvoiceResponse {
     recordId: number
@@ -19,7 +19,7 @@ interface PartialResponse {
 export const createInvoice = async (data: ProcessedData, index: number): Promise<InvoiceResponse> => {
     const cachedRecord = isExecuted('invoice', data.eventpopId)
     if (cachedRecord) {
-        console.log('invoice:skip: ', data.eventpopId)
+        logger('invoice', 'skip', data.eventpopId)
         return {
             recordId: Number(cachedRecord[1]),
             documentSerial: cachedRecord[2],
@@ -33,8 +33,6 @@ export const createInvoice = async (data: ProcessedData, index: number): Promise
 
     // const vat = Number((total * 0.07).toFixed(2));
     // const grandTotal = Number((total + vat).toFixed(2));
-
-    console.log(data)
 
     const raw = JSON.stringify({
         "isComplieAccountingRule": false,
@@ -88,8 +86,8 @@ export const createInvoice = async (data: ProcessedData, index: number): Promise
             "discountPerItemValue": 0,
             "total": total,
             "pricePerUnit": data.ticket.price,
-            "originalPrice": data.ticket.price,
-            "originalPriceWithVat": data.ticket.price * 1.07,
+            "originalPrice": total,
+            "originalPriceWithVat": total * 1.07,
             "productMasterId": 6291394,
             "type": 1,
             "multipleUnits": [],
@@ -191,9 +189,7 @@ export const createInvoice = async (data: ProcessedData, index: number): Promise
             return result as PartialResponse
         })
 
-    console.log(invoice)
-
-    console.log('invoice:done: ', data.eventpopId)
+    logger('invoice', 'done', data.eventpopId)
     execSync(`echo "${data.eventpopId} ${invoice.data.recordId} ${invoice.data.documentSerial}" >> output/invoice.txt`, {
         cwd: process.cwd()
     })
