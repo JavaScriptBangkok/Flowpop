@@ -48,6 +48,7 @@ export interface Order {
     payment: {
         method: 'bank' | 'credit'
         when: string // ISO timestamp
+        witholdingTax: number | null
     }
     customer: {
         name: string
@@ -56,5 +57,4 @@ export interface Order {
         branch: string
         email: string
     }
-    isWitholdingTax: boolean
 }

@@ -13,13 +13,13 @@ export const createPayment = (data: ProcessedData, recordId: number) => {
     }
 
     const totalPrice = data.ticket.price * data.ticket.amount
-    const withheldAmount = Number(((data.isWitholdingTax ? 0.0279 : 0) * totalPrice).toFixed(2))
+    const withheldAmount = data.payment.witholdingTax !== null ? data.payment.witholdingTax : 0
     const actualPriceAfterDeductWithheld = totalPrice - withheldAmount
 
     let payload = {
         "dateNow": data.payment.method === 'bank' ? dayjs(data.payment.when).add(7, 'h').toISOString() : creditCardBilledDate,
         "chequeDate": data.payment.method === 'bank' ? dayjs(data.payment.when).add(7, 'h').toISOString() : creditCardBilledDate,
-        "withholdingTax": data.isWitholdingTax ? 3 : null,
+        "withholdingTax": data.payment.witholdingTax !== null ? 3 : null,
         "amountWithheld": withheldAmount,
         "charge": 0,
         "paymentMethod": data.payment.method === "bank" ? 5 : 13,

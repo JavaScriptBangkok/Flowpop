@@ -4,6 +4,7 @@ import { parse } from "csv-parse/sync";
 import fs from "fs";
 import { DateTime } from "luxon";
 import { execSync } from 'child_process';
+import { isEmpty } from 'lodash'
 
 import { createInvoice } from "./createInvoice";
 import { createPayment } from "./createPayment";
@@ -46,10 +47,10 @@ const processedData: ProcessedData[] = (orders as Order[])
         return {
             eventpopId: item['Order #'],
             customer: {
-                name: item["Buyer Name"],
+                name: taxInfo?.["Billing Name"] ?? item["Buyer Name"],
                 taxId: taxInfo?.["Billing Tax ID"] ?? null,
                 address: taxInfo?.["Billing Address"] ?? null,
-                branch: 'สำนักงานใหญ่',
+                branch: taxInfo?.["Billing Branch"] ?? 'สำนักงานใหญ่',
                 email: orderWithEmail[item['Order #']]
             },
             ticket: {
@@ -66,9 +67,9 @@ const processedData: ProcessedData[] = (orders as Order[])
                         zone: 'Asia/Bangkok',
                         setZone: true,
                     }
-                ).toISO()!).toISOString()
+                ).toISO()!).toISOString(),
+                witholdingTax: Number(item["Withholding Tax"]) > 0 ? Number(item["Withholding Tax"]) : null
             },
-            isWitholdingTax: Number(item["Withholding Tax"]) > 0
         } satisfies ProcessedData
     })
 
@@ -85,12 +86,12 @@ const pickedData = processedData
         "#38704-3267295", // bank, tax
         "#38704-3225968", // credit
         "#38704-3215101", // bank,
-        "#38704-3288940", // out of scope
+        "#38704-3288940", // out of scope,
+        "#38704-3251019", // company
+        "#38704-3215560"   // company
 
     ].includes(o.eventpopId)
 )
-
-console.log(pickedData)
 
 ;(async () => {
     let index = 1
