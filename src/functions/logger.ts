@@ -1,6 +1,6 @@
 import chalk from 'chalk'
 
-export const logger = (type: 'invoice' | 'payment', status: 'done' | 'skip' | 'igno' | 'fail', ...data: any[]) => {
+export const logger = (type: 'invoice' | 'payment' | 'receipt', status: 'done' | 'skip' | 'igno' | 'fail', ...data: any[]) => {
     const title = `${type}:${status}: `
     switch (status) {
         case "done":
