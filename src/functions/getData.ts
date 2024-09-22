@@ -32,12 +32,12 @@ function convertTicketRowToTaxInfo(ticket: any): TaxInfo {
     };
 }
 
-function isTaxInfoEmpty(taxInfo: TaxInfo): boolean {
+function getTaxInfoCompleteness(taxInfo: TaxInfo): number {
     return (
-        isEmpty(taxInfo.billingName) &&
-        isEmpty(taxInfo.billingTaxId) &&
-        isEmpty(taxInfo.billingAddress) &&
-        isEmpty(taxInfo.billingBranch)
+        (taxInfo.billingName ? 1 : 0) +
+        (taxInfo.billingTaxId ? 1 : 0) +
+        (taxInfo.billingAddress ? 1 : 0) +
+        (taxInfo.billingBranch ? 1 : 0)
     );
 }
 
@@ -54,7 +54,7 @@ export const getData = () => {
     const ordersWithTaxArray = parse(ordersWithTaxString, { columns: true });
     for (const order of ordersWithTaxArray) {
         const taxInfo = convertOrderRowToTaxInfo(order);
-        if (!isTaxInfoEmpty(taxInfo)) {
+        if (getTaxInfoCompleteness(taxInfo) > 0) {
             taxInfoMap[order["Order Number"]] = taxInfo;
         }
     }
@@ -64,7 +64,8 @@ export const getData = () => {
     for (const ticket of attendeesArray) {
         const orderNumber = ticket['Order number'];
         const taxInfo = convertTicketRowToTaxInfo(ticket);
-        if (!taxInfoMap[orderNumber] && !isTaxInfoEmpty(taxInfo)) {
+        const existingCompleteness = taxInfoMap[orderNumber] ? getTaxInfoCompleteness(taxInfoMap[orderNumber]) : 0;
+        if (getTaxInfoCompleteness(taxInfo) > existingCompleteness) {
             taxInfoMap[orderNumber] = taxInfo;
         }
     }
