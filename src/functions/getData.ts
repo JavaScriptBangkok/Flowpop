@@ -8,19 +8,37 @@ import { DateTime } from "luxon";
 import type { Order, ProcessedData } from "./types";
 
 interface TaxInfo {
-  billingName: string;
-  billingTaxId: string;
-  billingAddress: string;
-  billingBranch: string;
+    billingName: string;
+    billingTaxId: string;
+    billingAddress: string;
+    billingBranch: string;
 }
 
-function convertToTaxInfo(csvRow: any): TaxInfo {
-  return {
-    billingName: csvRow["Billing Name"] || "",
-    billingTaxId: csvRow["Billing Tax ID"] || "",
-    billingAddress: csvRow["Billing Address"] || "",
-    billingBranch: csvRow["Billing Branch"] || "",
-  };
+function convertOrderRowToTaxInfo(csvRow: any): TaxInfo {
+    return {
+        billingName: csvRow["Billing Name"] || "",
+        billingTaxId: csvRow["Billing Tax ID"] || "",
+        billingAddress: csvRow["Billing Address"] || "",
+        billingBranch: csvRow["Billing Branch"] || "",
+    };
+}
+
+function convertTicketRowToTaxInfo(ticket: any): TaxInfo {
+    return {
+        billingName: ticket['Company or individual name for tax invoice'] || "",
+        billingBranch: ticket['Branch name for tax invoice (optional)'] || "",
+        billingTaxId: ticket['Tax id or citizen id for tax invoice'] || "",
+        billingAddress: ticket['Company or individual address for tax invoice'] || "",
+    };
+}
+
+function isTaxInfoEmpty(taxInfo: TaxInfo): boolean {
+    return (
+        isEmpty(taxInfo.billingName) &&
+        isEmpty(taxInfo.billingTaxId) &&
+        isEmpty(taxInfo.billingAddress) &&
+        isEmpty(taxInfo.billingBranch)
+    );
 }
 
 export const getData = () => {
@@ -35,24 +53,19 @@ export const getData = () => {
     const ordersWithTaxString = fs.readFileSync("input/orders-tax.csv");
     const ordersWithTaxArray = parse(ordersWithTaxString, { columns: true });
     for (const order of ordersWithTaxArray) {
-        taxInfoMap[order["Order Number"]] = convertToTaxInfo(order);
+        const taxInfo = convertOrderRowToTaxInfo(order);
+        if (!isTaxInfoEmpty(taxInfo)) {
+            taxInfoMap[order["Order Number"]] = taxInfo;
+        }
     }
 
     const attendeesString = fs.readFileSync("input/attendees.csv");
     const attendeesArray = parse(attendeesString, { columns: true });
     for (const ticket of attendeesArray) {
         const orderNumber = ticket['Order number'];
-        const billingName = ticket['Company or individual name for tax invoice'];
-        const billingBranch = ticket['Branch name for tax invoice (optional)'];
-        const billingTaxId = ticket['Tax id or citizen id for tax invoice'];
-        const billingAddress = ticket['Company or individual address for tax invoice'];
-        if (billingName || billingBranch || billingTaxId || billingAddress) {
-            taxInfoMap[orderNumber] = {
-                billingName: billingName || "",
-                billingBranch: billingBranch || "",
-                billingTaxId: billingTaxId || "",
-                billingAddress: billingAddress || "",
-            };
+        const taxInfo = convertTicketRowToTaxInfo(ticket);
+        if (!taxInfoMap[orderNumber] && !isTaxInfoEmpty(taxInfo)) {
+            taxInfoMap[orderNumber] = taxInfo;
         }
     }
 
