@@ -1,11 +1,27 @@
-import 'dotenv/config'
+import 'dotenv/config';
 
 import { parse } from "csv-parse/sync";
 import fs from "fs";
+import isEmpty from 'lodash/isEmpty';
 import { DateTime } from "luxon";
-import isEmpty from 'lodash/isEmpty'
 
 import type { Order, ProcessedData } from "./types";
+
+interface TaxInfo {
+  billingName: string;
+  billingTaxId: string;
+  billingAddress: string;
+  billingBranch: string;
+}
+
+function convertToTaxInfo(csvRow: any): TaxInfo {
+  return {
+    billingName: csvRow["Billing Name"] || "",
+    billingTaxId: csvRow["Billing Tax ID"] || "",
+    billingAddress: csvRow["Billing Address"] || "",
+    billingBranch: csvRow["Billing Branch"] || "",
+  };
+}
 
 export const getData = () => {
     /**
@@ -15,13 +31,30 @@ export const getData = () => {
     const ordersString = fs.readFileSync("input/orders.csv");
     const orders = parse(ordersString, { columns: true });
 
+    const taxInfoMap: Record<string, TaxInfo> = {};
     const ordersWithTaxString = fs.readFileSync("input/orders-tax.csv");
     const ordersWithTaxArray = parse(ordersWithTaxString, { columns: true });
-// @ts-ignore
-    const ordersWithTaxMap = ordersWithTaxArray.reduce((prev, cur) => {
-        prev[cur["Order Number"]] = cur;
-        return prev;
-    }, {});
+    for (const order of ordersWithTaxArray) {
+        taxInfoMap[order["Order Number"]] = convertToTaxInfo(order);
+    }
+
+    const attendeesString = fs.readFileSync("input/attendees.csv");
+    const attendeesArray = parse(attendeesString, { columns: true });
+    for (const ticket of attendeesArray) {
+        const orderNumber = ticket['Order number'];
+        const billingName = ticket['Company or individual name for tax invoice'];
+        const billingBranch = ticket['Branch name for tax invoice (optional)'];
+        const billingTaxId = ticket['Tax id or citizen id for tax invoice'];
+        const billingAddress = ticket['Company or individual address for tax invoice'];
+        if (billingName || billingBranch || billingTaxId || billingAddress) {
+            taxInfoMap[orderNumber] = {
+                billingName: billingName || "",
+                billingBranch: billingBranch || "",
+                billingTaxId: billingTaxId || "",
+                billingAddress: billingAddress || "",
+            };
+        }
+    }
 
     const orderWithEmail: Record<string, string> = parse(fs.readFileSync("input/event-orders.csv"), { columns: true })
         // @ts-ignore
@@ -36,15 +69,15 @@ export const getData = () => {
         .filter(o => Number(o['Subtotal']) > 0)
         // beautify data
         .map(item => {
-            const taxInfo = ordersWithTaxMap[item["Order #"]]
+            const taxInfo = taxInfoMap[item["Order #"]];
 
             return {
                 eventpopId: item['Order #'],
                 customer: {
-                    name: !isEmpty(taxInfo?.["Billing Name"]) ? taxInfo?.["Billing Name"] : item["Buyer Name"],
-                    taxId: taxInfo?.["Billing Tax ID"] ?? null,
-                    address: taxInfo?.["Billing Address"] ?? null,
-                    branch: taxInfo?.["Billing Branch"] ?? '',
+                    name: !isEmpty(taxInfo?.billingName) ? taxInfo.billingName : item["Buyer Name"],
+                    taxId: taxInfo?.billingTaxId ?? null,
+                    address: taxInfo?.billingAddress ?? null,
+                    branch: taxInfo?.billingBranch ?? '',
                     email: orderWithEmail[item['Order #']]
                 },
                 ticket: {
