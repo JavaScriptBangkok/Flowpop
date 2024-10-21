@@ -23,3 +23,13 @@ Visit **Orders & Tickets > Orders > Export <number> orders (.CSV)**
 Visit **Orders & Tickets > Orders**. Then, check **Request tax invoice or receipt** checkbox and click search.
 
 After that click **Export > Export with tax info (.CSV)**
+
+## Running scripts
+
+### Create tax invoice, and payment record
+
+`pnpm tsx ./src/app.ts`
+
+### Send email to eligible customers
+
+`pnpm tsx ./src/email.ts`
