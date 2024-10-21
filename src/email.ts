@@ -32,7 +32,9 @@ const paymentOrders = processedData
     // get only order that has invoice
     .filter(data => data.customer.taxId !== null)
     // get only Corporate Ticket
-    .filter(data => data.ticket.type.toLowerCase().includes('corporate ticket'))
+    .filter(data =>
+        data.ticket.type.toLowerCase().includes('corporate ticket') ||
+        data.ticket.type.toLowerCase().includes('contributor ticket'))
     // get tickets that's not corporate ticket
     // .filter(data => !data.ticket.type.toLowerCase().includes('corporate ticket'))
     // .filter(data => [

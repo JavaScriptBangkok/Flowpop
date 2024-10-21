@@ -46,7 +46,7 @@ export const getData = () => {
      * Execute
      */
 
-    const ordersString = fs.readFileSync("input/orders.csv");
+    const ordersString = fs.readFileSync("input/sales-report.csv");
     const orders = parse(ordersString, { columns: true });
 
     const taxInfoMap: Record<string, TaxInfo> = {};
@@ -77,7 +77,7 @@ export const getData = () => {
             return prev
         }, {})
 
-// // 1. clean up data
+    // 1. clean up data
     const processedData: ProcessedData[] = (orders as Order[])
         // filter subtotal 0 away
         .filter(o => Number(o['Subtotal']) > 0)
